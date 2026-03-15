@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Duty Planner - Planner</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="header-box">
+    <img
+      class="header-logo"
+      src="https://incyqbermouxcrusmzby.supabase.co/storage/v1/object/public/assets/logo.png"
+      alt="Al-Lith Hospital Logo"
+    >
+    <div class="header-ar">مستشفى الليث</div>
+    <div class="header-en">Al-Lith Hospital</div>
+    <div id="headerSub" class="header-sub">Doctor Duty Planner</div>
+  </div>
+
+  <div class="box">
+    <h1 id="mainTitle">Hospital Duty Planner</h1>
+    <div class="muted">Planner page</div>
+  </div>
+
+  <div class="box">
+    <div class="row">
+      <button class="secondary nav-btn" onclick="location.href='index.html'">Home</button>
+      <button class="primary nav-btn" onclick="location.href='planner.html'">Planner</button>
+      <button class="secondary nav-btn" onclick="location.href='summary.html'">Summary</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Month Selection</h2>
+    <div class="row">
+      <select id="monthSelect" onchange="handleMonthDropdownChange()"></select>
+      <button class="secondary" onclick="refreshAll()">Refresh planner</button>
+      <button class="danger" onclick="clearMyBookings()">Clear my bookings</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Current Doctor</h2>
+    <div id="currentDoctorBox" class="muted">Current doctor: none</div>
+    <div id="plannerStatus" class="status"></div>
+  </div>
+
+  <div id="calendar"></div>
+
+  <script src="app.js"></script>
+  <script>
+    function renderCalendar(){
+      const calendar = document.getElementById('calendar');
+      const days = getCurrentDaysArray();
+      let html = '';
+
+      for(const day of days){
+        const isOpen = !!openDays[day];
+
+        html += `<div class="day-box">`;
+        html += `
+          <h3 class="day-toggle" onclick="toggleDay(${day})">
+            <span>${escapeHtml(getCurrentMonthName())} ${day}, ${selectedYear}</span>
+            <span class="day-arrow">${isOpen ? '−' : '+'}</span>
+          </h3>
+        `;
+
+        html += `<div class="day-content ${isOpen ? 'open' : ''}">`;
+
+        for(const time of TIMES){
+          const doctors = getShiftDoctors(day, time);
+          const leader = getShiftLeader(day, time);
+          const mine = currentDoctor && doctors.includes(currentDoctor);
+
+          html += `
+            <div class="shift-row">
+              <div class="shift-left">
+                <span class="time-badge">${time}</span>
+                <span>
+          `;
+
+          if(doctors.length){
+            doctors.forEach(doctor => {
+              const isLeader = doctor === leader;
+
+              html += `
+                <span class="doctor-chip ${isLeader ? 'leader-chip' : ''}">
+                  <span>${escapeHtml(doctor)}</span>
+                  ${isLeader ? '<span class="leader-label">Leader</span>' : ''}
+                  ${doctor === currentDoctor ? '<span class="mine">booked by you</span>' : ''}
+                  ${currentIsAdmin ? `<button class="chip-remove" onclick='event.stopPropagation(); removeSpecificBooking(${day}, ${JSON.stringify(time)}, ${JSON.stringify(doctor)})'>Remove</button>` : ''}
+                  ${currentIsAdmin && !isLeader ? `<button class="chip-leader" onclick='event.stopPropagation(); adminSetLeaderDirect(${day}, ${JSON.stringify(time)}, ${JSON.stringify(doctor)})'>Make leader</button>` : ''}
+                </span>
+              `;
+            });
+          } else {
+            html += `Available`;
+          }
+
+          html += `
+                </span>
+              </div>
+              <div>
+          `;
+
+          if(!currentDoctor){
+            html += `<button class="secondary" disabled>Login first</button>`;
+          } else if(mine){
+            html += `<button class="secondary" onclick="removeMyBooking(${day}, '${time}')">Remove mine</button>`;
+          } else {
+            html += `<button class="primary" onclick="reserveShift(${day}, '${time}')">Reserve</button>`;
+          }
+
+          html += `
+              </div>
+            </div>
+          `;
+        }
+
+        html += `</div>`;
+        html += `</div>`;
+      }
+
+      calendar.innerHTML = html;
+    }
+
+    async function refreshAll(){
+      await loadCurrentDoctorFromSession();
+      await loadDoctors();
+      await loadBookings();
+    }
+
+    async function initPage(){
+      await initShared();
+      renderCalendar();
+      setPlannerStatus('Planner page loaded.');
+    }
+
+    initPage();
+  </script>
+</body>
+</html>
