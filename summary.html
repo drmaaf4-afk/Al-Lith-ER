@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Duty Planner - Summary</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="header-box">
+    <img
+      class="header-logo"
+      src="https://incyqbermouxcrusmzby.supabase.co/storage/v1/object/public/assets/logo.png"
+      alt="Al-Lith Hospital Logo"
+    >
+    <div class="header-ar">مستشفى الليث</div>
+    <div class="header-en">Al-Lith Hospital</div>
+    <div id="headerSub" class="header-sub">Doctor Duty Planner</div>
+  </div>
+
+  <div class="box">
+    <h1 id="mainTitle">Hospital Duty Planner</h1>
+    <div class="muted">Summary and admin page</div>
+  </div>
+
+  <div class="box">
+    <div class="row">
+      <button class="secondary nav-btn" onclick="location.href='index.html'">Home</button>
+      <button class="secondary nav-btn" onclick="location.href='planner.html'">Planner</button>
+      <button class="primary nav-btn" onclick="location.href='summary.html'">Summary</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Month Selection</h2>
+    <div class="row">
+      <select id="monthSelect" onchange="handleMonthDropdownChange()"></select>
+      <button class="secondary" onclick="refreshAll()">Refresh</button>
+      <button class="secondary" onclick="exportExcel()">Export Excel</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Current Doctor</h2>
+    <div id="currentDoctorBox" class="muted">Current doctor: none</div>
+    <div id="plannerStatus" class="status"></div>
+  </div>
+
+  <div class="box" id="adminBox" style="display:none;">
+    <h2>
+      <a href="#" class="summary-link" onclick="toggleAdminBox(); return false;">
+        Admin Mode (click to open / close)
+      </a>
+    </h2>
+
+    <div id="adminContent" style="display:none;">
+      <div class="muted">Visible only for users with is_admin = TRUE.</div>
+
+      <div class="row">
+        <select id="adminDoctor"></select>
+        <select id="adminDay"></select>
+        <select id="adminTime"></select>
+        <button class="admin" onclick="adminAddShift()">Add shift for doctor</button>
+      </div>
+
+      <div class="row">
+        <select id="leaderDoctor"></select>
+        <select id="leaderDay"></select>
+        <select id="leaderTime"></select>
+        <button class="leader-btn" onclick="setShiftLeader()">Set shift leader</button>
+        <button class="secondary" onclick="clearShiftLeader()">Clear leader</button>
+      </div>
+
+      <div class="row">
+        <select id="adminClearDay"></select>
+        <button class="danger" onclick="clearSelectedDay()">Clear selected day</button>
+        <button class="danger" onclick="clearAllBookings()">Clear all bookings</button>
+      </div>
+
+      <div class="muted">Admin can add shifts, remove any booking, and assign shift leaders.</div>
+      <div id="adminStatus" class="status"></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Summary</h2>
+    <div id="summaryContent" class="muted">Loading summary...</div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function renderSummary(){
+      const summaryEl = document.getElementById('summaryContent');
+
+      if(!allBookings.length){
+        summaryEl.innerHTML = `<div class="muted">No bookings yet for ${escapeHtml(getCurrentMonthLabel())}.</div>`;
+        return;
+      }
+
+      const days = getCurrentDaysArray();
+      const counts = {};
+
+      for(const row of allBookings){
+        counts[row.doctor] = (counts[row.doctor] || 0) + 1;
+      }
+
+      const sorted = Object.entries(counts)
+        .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+      let html = '';
+      html += `<h3 style="margin-bottom:10px;">Total shifts per doctor - ${escapeHtml(getCurrentMonthLabel())}</h3>`;
+
+      html += sorted.map(([doctor, count]) => `
+        <div class="summary-item">
+          <strong>${escapeHtml(doctor)}</strong>: ${count} shifts (${count * SHIFT_HOURS} hours)
+        </div>
+      `).join('');
+
+      html += '<div style="height:12px;"></div>';
+      html += `<h3 style="margin-bottom:10px;">Monthly hours warnings (${MAX_MONTHLY_HOURS} hours)</h3>`;
+
+      const monthlyWarnings = sorted.filter(([doctor, count]) => count * SHIFT_HOURS >= MAX_MONTHLY_HOURS);
+
+      if(monthlyWarnings.length === 0){
+        html += `<div class="summary-item">No doctor has reached ${MAX_MONTHLY_HOURS} hours.</div>`;
+      } else {
+        monthlyWarnings.forEach(([doctor, count]) => {
+          html += `
+            <div class="summary-item">
+              <strong>${escapeHtml(doctor)}</strong>: ${count * SHIFT_HOURS} hours
+            </div>
+          `;
+        });
+      }
+
+      html += '<div style="height:12px;"></div>';
+      html += '<h3 style="margin-bottom:10px;">Daily rule warnings</h3>';
+
+      const doctorDayCounts = {};
+      for(const row of allBookings){
+        const key = `${row.doctor}__${row.day}`;
+        doctorDayCounts[key] = (doctorDayCounts[key] || 0) + 1;
+      }
+
+      const warnings = Object.entries(doctorDayCounts)
+        .filter(([_, count]) => count > 3)
+        .sort((a, b) => a[0].localeCompare(b[0]));
+
+      if(warnings.length === 0){
+        html += `<div class="summary-item">No daily rule violations.</div>`;
+      } else {
+        warnings.forEach(([key, count]) => {
+          const [doctor, day] = key.split('__');
+          html += `
+            <div class="summary-item">
+              <strong>${escapeHtml(doctor)}</strong> on ${escapeHtml(getCurrentMonthName())} ${day}: ${count} shifts (maximum is 3)
+            </div>
+          `;
+        });
+      }
+
+      html += '<div style="height:12px;"></div>';
+      html += '<h3 style="margin-bottom:10px;">Shift leaders</h3>';
+
+      const leaderItems = [];
+      for(const day of days){
+        for(const time of TIMES){
+          const leader = getShiftLeader(day, time);
+          if(leader){
+            leaderItems.push(
+              `<div class="summary-item">${escapeHtml(getCurrentMonthName())} ${day} ${time}: <strong>${escapeHtml(leader)}</strong></div>`
+            );
+          }
+        }
+      }
+
+      html += leaderItems.length
+        ? leaderItems.join('')
+        : '<div class="summary-item">No shift leaders assigned.</div>';
+
+      html += '<div style="height:12px;"></div>';
+      html += '<h3 style="margin-bottom:10px;">Booked shifts</h3>';
+
+      for(const day of days){
+        const dayRows = allBookings.filter(r => Number(r.day) === day);
+        if(!dayRows.length) continue;
+
+        html += `<div class="summary-item"><strong>${escapeHtml(getCurrentMonthName())} ${day}, ${selectedYear}</strong><br>`;
+        for(const time of TIMES){
+          const rows = dayRows.filter(r => r.time === time);
+          if(!rows.length) continue;
+          const leader = rows.find(r => r.shift_leader)?.shift_leader || '';
+          const namesText = rows
+            .map(r => r.doctor === leader ? `${r.doctor} (Leader)` : r.doctor)
+            .map(escapeHtml)
+            .join(', ');
+          html += `${time}: ${namesText}<br>`;
+        }
+        html += `</div>`;
+      }
+
+      summaryEl.innerHTML = html;
+    }
+
+    async function refreshAll(){
+      await loadCurrentDoctorFromSession();
+      await loadDoctors();
+      await loadBookings();
+    }
+
+    async function initPage(){
+      await initShared();
+      renderSummary();
+      setPlannerStatus('Summary page loaded.');
+    }
+
+    initPage();
+  </script>
+</body>
+</html>
