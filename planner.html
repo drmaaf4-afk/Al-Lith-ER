@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Duty Planner</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div class="header-box">
+
+<img class="header-logo"
+src="https://incyqbermouxcrusmzby.supabase.co/storage/v1/object/public/assets/logo.png">
+
+<div class="header-ar">مستشفى الليث</div>
+
+<div class="header-en">Al-Lith Hospital</div>
+
+<div class="header-sub" id="headerSub"></div>
+
+</div>
+
+
+<div class="box">
+
+<a class="nav-link" href="index.html">Home</a>
+
+<a class="nav-link" href="summary.html">Summary</a>
+
+</div>
+
+
+<div class="box">
+
+<select id="monthSelect" onchange="handleMonthDropdownChange()"></select>
+
+<div id="plannerStatus"></div>
+
+</div>
+
+
+<div class="box">
+
+<h2>Admin Mode</h2>
+
+<a href="#" onclick="toggleAdminBox();return false;">Open / Close</a>
+
+<div id="adminContent" style="display:none">
+
+<select id="adminDoctor"></select>
+
+<select id="adminDay"></select>
+
+<select id="adminTime"></select>
+
+<button onclick="adminAddShift()">Add Shift</button>
+
+<br><br>
+
+<select id="leaderDoctor"></select>
+
+<select id="leaderDay"></select>
+
+<select id="leaderTime"></select>
+
+<button onclick="setShiftLeader()">Set Leader</button>
+
+<button onclick="clearShiftLeader()">Clear Leader</button>
+
+</div>
+
+</div>
+
+
+<div id="calendar"></div>
+
+
+<script src="app.js"></script>
+
+<script>
+
+function renderCalendar(){
+
+const cal=document.getElementById("calendar")
+
+let html=""
+
+for(const day of getCurrentDaysArray()){
+
+const open=openDays[day]
+
+html+=`<div class="day-box">
+
+<h3 class="day-toggle" onclick="toggleDay(${day})">
+
+${getCurrentMonthName()} ${day}
+
+</h3>
+
+<div class="day-content ${open?'open':''}">`
+
+for(const time of TIMES){
+
+const doctors=getShiftDoctors(day,time)
+
+const leader=getShiftLeader(day,time)
+
+const mine=currentDoctor && doctors.includes(currentDoctor)
+
+html+=`<div class="shift-row">
+
+<div>
+
+<b>${time}</b> `
+
+if(doctors.length){
+
+doctors.forEach(d=>{
+
+html+=`<span class="doctor-chip ${d===leader?'leader-chip':''}">
+
+${d}
+
+${d===leader?'(Leader)':''}
+
+</span>`
+
+})
+
+}else{
+
+html+="Available"
+
+}
+
+html+=`</div><div>`
+
+if(!currentDoctor){
+
+html+=`<button disabled>Login</button>`
+
+}else if(mine){
+
+html+=`<button onclick="removeMyBooking(${day},'${time}')">Remove</button>`
+
+}else{
+
+html+=`<button onclick="reserveShift(${day},'${time}')">Reserve</button>`
+
+}
+
+html+=`</div></div>`
+
+}
+
+html+=`</div></div>`
+
+}
+
+cal.innerHTML=html
+
+}
+
+initShared()
+
+</script>
+
+</body>
+</html>
