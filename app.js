@@ -977,15 +977,7 @@ async function exportExcel(){
   });
 
   const rosterTable = [];
-  rosterTable.push([
-    'Day',
-    '08-12',
-    '12-16',
-    '16-20',
-    '20-24',
-    '00-04',
-    '04-08'
-  ]);
+  rosterTable.push(['Day', ...TIMES]);
 
   const totals = {};
   const days = getCurrentDaysArray();
@@ -998,42 +990,57 @@ async function exportExcel(){
       const leader = getShiftLeader(day, time);
 
       const names = rows.map(r => {
-        const value = emailToName[r.doctor] ? emailToName[r.doctor] : r.doctor;
-        return r.doctor === leader ? `${value} (Leader)` : value;
+        const name = emailToName[r.doctor] || r.doctor;
+        return r.doctor === leader ? `${name} (Leader)` : name;
       });
 
-      for(const r of rows){
-        const name = emailToName[r.doctor] ? emailToName[r.doctor] : r.doctor;
-        if(!totals[name]){
-          totals[name] = { shifts: 0, hours: 0 };
-        }
-        totals[name].shifts += 1;
+      rows.forEach(r => {
+        const name = emailToName[r.doctor] || r.doctor;
+        if(!totals[name]) totals[name] = { shifts: 0, hours: 0 };
+        totals[name].shifts++;
         totals[name].hours += SHIFT_HOURS;
-      }
+      });
 
-      row.push(names.join(', '));
+      row.push(names.join('\n')); // 🔥 IMPORTANT: line break instead of comma
     }
 
     rosterTable.push(row);
   }
 
-  const totalsTable = [];
-  totalsTable.push(['Doctor','Total Shifts','Total Hours']);
-
-  Object.keys(totals)
-    .sort((a,b) => a.localeCompare(b))
-    .forEach(name => {
-      totalsTable.push([name, totals[name].shifts, totals[name].hours]);
-    });
+  const totalsTable = [['Doctor','Total Shifts','Total Hours']];
+  Object.keys(totals).sort().forEach(name => {
+    totalsTable.push([name, totals[name].shifts, totals[name].hours]);
+  });
 
   const wsRoster = XLSX.utils.aoa_to_sheet(rosterTable);
   const wsTotals = XLSX.utils.aoa_to_sheet(totalsTable);
+
+  // Auto width
+  wsRoster['!cols'] = rosterTable[0].map((_, colIndex) => ({
+    wch: Math.max(...rosterTable.map(r => (r[colIndex] || '').toString().length)) + 3
+  }));
+
+  wsTotals['!cols'] = totalsTable[0].map((_, colIndex) => ({
+    wch: Math.max(...totalsTable.map(r => (r[colIndex] || '').toString().length)) + 3
+  }));
+
+  // Wrap text
+  const range = XLSX.utils.decode_range(wsRoster['!ref']);
+  for(let R = range.s.r; R <= range.e.r; ++R){
+    for(let C = range.s.c; C <= range.e.c; ++C){
+      const cell = wsRoster[XLSX.utils.encode_cell({ r: R, c: C })];
+      if(cell){
+        cell.s = { alignment: { wrapText: true } };
+      }
+    }
+  }
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, wsRoster, 'Duty Roster');
   XLSX.utils.book_append_sheet(wb, wsTotals, 'Doctor Totals');
 
-  XLSX.writeFile(wb, `Hospital_Duty_Roster_${getCurrentMonthName()}_${selectedYear}.xlsx`);
+  XLSX.writeFile(wb, `Duty_${getCurrentMonthName()}_${selectedYear}.xlsx`);
+
   showToast('Excel exported successfully.', 'ok');
 }
 
