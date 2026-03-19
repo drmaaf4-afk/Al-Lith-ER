@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="pageTitle">Emergency Department Planner</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body{
+      font-family:Arial,sans-serif;
+      max-width:900px;
+      margin:auto;
+      background:#9E9EA9;
+      padding:20px;
+      color:#114D82;
+    }
+
+    h1,h2,h3{
+      margin-top:0;
+      color:#114D82;
+    }
+
+    .header-box{
+      background:#283A83;
+      border-radius:18px;
+      padding:24px 18px;
+      margin-bottom:16px;
+      text-align:center;
+      border:2px solid #15508A;
+    }
+
+    .header-logo{
+      width:140px;
+      max-width:100%;
+      height:auto;
+      margin-bottom:12px;
+    }
+
+    .header-ar{
+      font-size:28px;
+      font-weight:bold;
+      color:#9ECC3B;
+      margin:0 0 6px 0;
+      direction:rtl;
+    }
+
+    .header-en{
+      font-size:30px;
+      font-weight:bold;
+      color:#9ECC3B;
+      margin:0 0 8px 0;
+    }
+
+    .header-sub{
+      color:#3AC0C3;
+      font-size:16px;
+      margin:0;
+      font-weight:600;
+    }
+
+    .box{
+      background:#1691D0;
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:16px;
+      border:2px solid #15508A;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:10px;
+    }
+
+    input,button,select{
+      padding:10px 12px;
+      font-size:16px;
+      border-radius:10px;
+    }
+
+    input,select{
+      border:2px solid #15508A;
+      min-width:220px;
+      background:#9E9EA9;
+      color:#114D82;
+    }
+
+    button{
+      border:none;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    .primary{
+      background:#283A83;
+      color:#9ECC3B;
+    }
+
+    .secondary{
+      background:#9E9EA9;
+      color:#114D82;
+    }
+
+    .danger{
+      background:#9E9EA9;
+      color:#114D82;
+    }
+
+    .admin{
+      background:#15508A;
+      color:#9ECC3B;
+    }
+
+    .leader-btn{
+      background:#9ECC3B;
+      color:#114D82;
+    }
+
+    .oncall-btn{
+      background:#48AD48;
+      color:#114D82;
+    }
+
+    .status{
+      min-height:20px;
+      margin-top:8px;
+      font-size:14px;
+    }
+
+    .ok{
+      color:#48AD48;
+    }
+
+    .err{
+      color:#283A83;
+    }
+
+    .muted{
+      color:#114D82;
+      font-size:14px;
+    }
+
+    .day-box{
+      background:#1691D0;
+      border-radius:16px;
+      padding:14px;
+      margin-bottom:14px;
+      border:2px solid #15508A;
+    }
+
+    .day-toggle{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      cursor:pointer;
+      user-select:none;
+      margin:0;
+      padding:4px 0;
+      color:#114D82;
+    }
+
+    .day-toggle:hover{
+      color:#283A83;
+    }
+
+    .day-arrow{
+      font-size:18px;
+      font-weight:bold;
+      color:#15508A;
+    }
+
+    .day-content{
+      display:none;
+      margin-top:10px;
+    }
+
+    .day-content.open{
+      display:block;
+    }
+
+    .shift-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      background:#3AC0C3;
+      border:2px solid #15508A;
+      border-radius:12px;
+      padding:10px;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+
+    .shift-left{
+      flex:1;
+      min-width:240px;
+    }
+
+    .time-badge{
+      display:inline-block;
+      min-width:76px;
+      font-weight:bold;
+      color:#283A83;
+    }
+
+    .mine{
+      color:#48AD48;
+      font-weight:bold;
+    }
+
+    .admin-badge{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:bold;
+      background:#9ECC3B;
+      color:#114D82;
+    }
+
+    .doctor-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      margin-right:8px;
+      margin-bottom:6px;
+      flex-wrap:wrap;
+      padding:4px 8px;
+      border-radius:999px;
+      background:#1691D0;
+      color:#114D82;
+      border:1px solid #15508A;
+    }
+
+    .leader-chip{
+      background:#9ECC3B;
+      color:#114D82;
+      border:1px solid #48AD48;
+      font-weight:bold;
+    }
+
+    .oncall-chip{
+      background:#48AD48;
+      color:#114D82;
+      border:1px solid #9ECC3B;
+      font-weight:bold;
+    }
+
+    .leader-label{
+      font-size:12px;
+      font-weight:bold;
+      color:#114D82;
+      background:#9ECC3B;
+      padding:2px 6px;
+      border-radius:999px;
+    }
+
+    .oncall-label{
+      font-size:12px;
+      font-weight:bold;
+      color:#114D82;
+      background:#48AD48;
+      padding:2px 6px;
+      border-radius:999px;
+    }
+
+    .chip-remove{
+      background:#9E9EA9;
+      color:#114D82;
+      padding:4px 8px;
+      font-size:12px;
+      border-radius:999px;
+    }
+
+    .chip-leader{
+      background:#9ECC3B;
+      color:#114D82;
+      padding:4px 8px;
+      font-size:12px;
+      border-radius:999px;
+    }
+
+    .chip-oncall{
+      background:#48AD48;
+      color:#114D82;
+      padding:4px 8px;
+      font-size:12px;
+      border-radius:999px;
+    }
+
+    .summary-item{
+      padding:6px 0;
+      border-bottom:1px solid #15508A;
+      color:#114D82;
+    }
+
+    .summary-item:last-child{
+      border-bottom:none;
+    }
+
+    #adminBox{
+      display:none;
+    }
+
+    .summary-link{
+      color:#283A83;
+      text-decoration:none;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    .nav-links{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .nav-links a{
+      display:inline-block;
+      padding:10px 14px;
+      background:#9E9EA9;
+      border-radius:12px;
+      text-decoration:none;
+      color:#114D82;
+      font-weight:bold;
+      border:2px solid #15508A;
+    }
+
+    #toast{
+      position:fixed;
+      left:50%;
+      bottom:20px;
+      transform:translateX(-50%) translateY(20px);
+      min-width:240px;
+      max-width:90vw;
+      padding:12px 16px;
+      border-radius:12px;
+      color:#9ECC3B;
+      font-weight:bold;
+      opacity:0;
+      transition:all 0.25s ease;
+      z-index:9999;
+      text-align:center;
+      pointer-events:none;
+      border:2px solid #15508A;
+    }
+
+    #toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+
+    #toast.ok{ background:#48AD48; }
+    #toast.err{ background:#1691D0; }
+    #toast.info{ background:#283A83; }
+  </style>
+</head>
+<body>
+
+  <div class="header-box">
+    <img
+      class="header-logo"
+      src="https://incyqbermouxcrusmzby.supabase.co/storage/v1/object/public/assets/logo.png"
+      alt="Al-Lith Hospital Logo"
+    >
+    <div class="header-ar">مستشفى الليث</div>
+    <div class="header-en">Al-Lith Hospital</div>
+    <div class="header-sub" id="headerSub">Emergency Department Planner</div>
+  </div>
+
+  <div class="box">
+    <div class="muted">4-hour shifts</div>
+    <div class="muted">Rule: a doctor can have up to 3 shifts in one day.</div>
+  </div>
+
+  <div class="box">
+    <h2>Navigation</h2>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="planner.html">Planner</a>
+      <a href="summary.html">Summary</a>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Month Selection</h2>
+    <div class="row">
+      <select id="monthSelect" onchange="handleMonthDropdownChange()"></select>
+    </div>
+    <div class="muted">Selected month will be used in Planner and Summary pages.</div>
+  </div>
+
+  <div class="box">
+    <h2>Doctor Access</h2>
+    <div class="row">
+      <input id="signup_email" type="text" placeholder="Doctor name or email">
+      <input id="signup_password" type="password" placeholder="Password">
+    </div>
+    <div class="row">
+      <button class="primary" onclick="signup()">Sign up</button>
+      <button class="primary" onclick="login()">Log in</button>
+      <button class="danger" onclick="logoutDoctor()">Log out</button>
+    </div>
+    <div class="muted">Sign up works only for doctors already listed in the doctors table.</div>
+    <div id="authStatus" class="status"></div>
+  </div>
+
+  <div class="box">
+    <h2>Current Doctor</h2>
+    <div id="currentDoctorBox" class="muted">Current doctor: none</div>
+    <div id="plannerStatus" class="status"></div>
+  </div>
+
+  <div class="box" id="adminBox" style="display:none;">
+    <h2>
+      <a href="#" class="summary-link" onclick="toggleAdminBox(); return false;">
+        Admin Mode (click to open / close)
+      </a>
+    </h2>
+
+    <div id="adminContent" style="display:none;">
+      <div class="muted">Visible only for users with is_admin = TRUE.</div>
+
+      <div class="row">
+        <select id="adminDoctor"></select>
+        <select id="adminDay"></select>
+        <select id="adminTime"></select>
+        <button class="admin" onclick="adminAddShift()">Add shift for doctor</button>
+      </div>
+
+      <div class="row">
+        <select id="leaderDoctor"></select>
+        <select id="leaderDay"></select>
+        <select id="leaderTime"></select>
+        <button class="leader-btn" onclick="setShiftLeader()">Set shift leader</button>
+        <button class="secondary" onclick="clearShiftLeader()">Clear leader</button>
+      </div>
+
+      <div class="row">
+        <select id="onCallDoctor"></select>
+        <select id="onCallDay"></select>
+        <select id="onCallTime"></select>
+        <button class="oncall-btn" onclick="setOnCallDoctor()">Add on call</button>
+        <button class="secondary" onclick="clearOnCallDoctor()">Clear all on call</button>
+      </div>
+
+      <div class="row">
+        <select id="adminClearDay"></select>
+        <button class="danger" onclick="clearSelectedDay()">Clear selected day</button>
+        <button class="danger" onclick="clearAllBookings()">Clear all bookings</button>
+      </div>
+
+      <div class="muted">Admin can add shifts, remove bookings, assign leaders, and assign multiple on-call doctors.</div>
+      <div id="adminStatus" class="status"></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="row">
+      <button class="secondary" onclick="refreshAll()">Refresh planner</button>
+      <button class="danger" onclick="clearMyBookings()">Clear my bookings</button>
+      <button class="secondary" onclick="exportExcel()">Export Excel</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>
+      <a href="#" class="summary-link" onclick="toggleSummary(); return false;">
+        Summary (click to open / close)
+      </a>
+    </h2>
+    <div id="summaryContent" class="muted" style="display:none;">Loading summary...</div>
+  </div>
+
+  <div id="calendar"></div>
+
+  <div id="toast"></div>
+
+  <script src="app.js"></script>
+  <script>
+    function renderSummary(){
+      const summaryEl = document.getElementById('summaryContent');
+
+      if(!summaryEl) return;
+
+      if(!allBookings.length){
+        summaryEl.innerHTML = '<div class="muted">No bookings yet.</div>';
+        return;
+      }
+
+      const counts = {};
+      for(const row of allBookings){
+        counts[row.doctor] = (counts[row.doctor] || 0) + 1;
+      }
+
+      const sorted = Object.entries(counts)
+        .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+      let html = '';
+      html += '<h3 style="margin-bottom:10px;">Total shifts per doctor</h3>';
+
+      html += sorted.map(([doctor, count]) => `
+        <div class="summary-item">
+          <strong>${escapeHtml(doctor)}</strong>: ${count} shifts (${count * SHIFT_HOURS} hours)
+        </div>
+      `).join('');
+
+      html += '<div style="height:12px;"></div>';
+      html += `<h3 style="margin-bottom:10px;">Monthly hours warnings (${MAX_MONTHLY_HOURS} hours)</h3>`;
+
+      const monthlyWarnings = sorted.filter(([doctor, count]) => count * SHIFT_HOURS >= MAX_MONTHLY_HOURS);
+
+      if(monthlyWarnings.length === 0){
+        html += `<div class="summary-item">No doctor has reached ${MAX_MONTHLY_HOURS} hours.</div>`;
+      } else {
+        monthlyWarnings.forEach(([doctor, count]) => {
+          html += `
+            <div class="summary-item">
+              <strong>${escapeHtml(doctor)}</strong>: ${count * SHIFT_HOURS} hours
+            </div>
+          `;
+        });
+      }
+
+      html += '<div style="height:12px;"></div>';
+      html += '<h3 style="margin-bottom:10px;">Daily rule warnings</h3>';
+
+      const doctorDayCounts = {};
+      for(const row of allBookings){
+        const key = `${row.doctor}__${row.day}`;
+        doctorDayCounts[key] = (doctorDayCounts[key] || 0) + 1;
+      }
+
+      const warnings = Object.entries(doctorDayCounts)
+        .filter(([_, count]) => count > 3)
+        .sort((a, b) => a[0].localeCompare(b[0]));
+
+      if(warnings.length === 0){
+        html += `<div class="summary-item">No daily rule violations.</div>`;
+      } else {
+        warnings.forEach(([key, count]) => {
+          const [doctor, day] = key.split('__');
+          html += `
+            <div class="summary-item">
+              <strong>${escapeHtml(doctor)}</strong> on ${escapeHtml(getCurrentMonthName())} ${escapeHtml(day)}: ${count} shifts (maximum is 3)
+            </div>
+          `;
+        });
+      }
+
+      html += '<div style="height:12px;"></div>';
+      html += '<h3 style="margin-bottom:10px;">Shift leaders</h3>';
+
+      const days = getCurrentDaysArray();
+      const leaderItems = [];
+
+      for(const day of days){
+        for(const time of TIMES){
+          const leader = getShiftLeader(day, time);
+          if(leader){
+            leaderItems.push(`<div class="summary-item">${getCurrentMonthName()} ${day} ${time}: <strong>${escapeHtml(leader)}</strong></div>`);
+          }
+        }
+      }
+
+      html += leaderItems.length
+        ? leaderItems.join('')
+        : '<div class="summary-item">No shift leaders assigned.</div>';
+
+      html += '<div style="height:12px;"></div>';
+      html += '<h3 style="margin-bottom:10px;">On-call doctors</h3>';
+
+      const onCallItems = [];
+
+      for(const day of days){
+        for(const time of TIMES){
+          const onCall = getShiftOnCall(day, time);
+          if(onCall.length){
+            onCallItems.push(`<div class="summary-item">${getCurrentMonthName()} ${day} ${time}: <strong>${escapeHtml(onCall.join(', '))}</strong></div>`);
+          }
+        }
+      }
+
+      html += onCallItems.length
+        ? onCallItems.join('')
+        : '<div class="summary-item">No on-call doctors assigned.</div>';
+
+      html += '<div style="height:12px;"></div>';
+      html += '<h3 style="margin-bottom:10px;">Booked shifts</h3>';
+
+      for(const day of days){
+        const dayRows = allBookings.filter(r => Number(r.day) === day);
+        if(!dayRows.length) continue;
+
+        html += `<div class="summary-item"><strong>${getCurrentMonthName()} ${day}</strong><br>`;
+
+        for(const time of TIMES){
+          const rows = dayRows.filter(r => r.time === time);
+          if(!rows.length) continue;
+
+          const leader = rows.find(r => r.shift_leader)?.shift_leader || '';
+          const onCall = getShiftOnCall(day, time);
+
+          const namesText = rows
+            .map(r => {
+              let label = r.doctor;
+              if(r.doctor === leader) label += ' (Leader)';
+              if(onCall.includes(r.doctor)) label += ' (On Call)';
+              return label;
+            })
+            .map(escapeHtml)
+            .join(', ');
+
+          html += `${time}: ${namesText}<br>`;
+        }
+
+        html += `</div>`;
+      }
+
+      summaryEl.innerHTML = html;
+    }
+
+    function renderCalendar(){
+      const calendar = document.getElementById('calendar');
+      if(!calendar) return;
+
+      let html = '';
+      const days = getCurrentDaysArray();
+
+      for(const day of days){
+        const isOpen = !!openDays[day];
+
+        html += `<div class="day-box">`;
+        html += `
+          <h3 class="day-toggle" onclick="toggleDay(${day})">
+            <span>${getCurrentMonthName()} ${day}</span>
+            <span class="day-arrow">${isOpen ? '−' : '+'}</span>
+          </h3>
+        `;
+
+        html += `<div class="day-content ${isOpen ? 'open' : ''}">`;
+
+        for(const time of TIMES){
+          const doctors = getShiftDoctors(day, time);
+          const leader = getShiftLeader(day, time);
+          const onCallList = getShiftOnCall(day, time);
+          const mine = currentDoctor && doctors.includes(currentDoctor);
+
+          html += `
+            <div class="shift-row">
+              <div class="shift-left">
+                <span class="time-badge">${time}</span>
+                <span>
+          `;
+
+          if(doctors.length){
+            doctors.forEach(doctor => {
+              const isLeader = doctor === leader;
+              const isOnCall = onCallList.includes(doctor);
+
+              let extraClasses = '';
+              if(isLeader) extraClasses += ' leader-chip';
+              if(isOnCall) extraClasses += ' oncall-chip';
+
+              html += `
+                <span class="doctor-chip${extraClasses}">
+                  <span>${escapeHtml(doctor)}</span>
+                  ${isLeader ? '<span class="leader-label">Leader</span>' : ''}
+                  ${isOnCall ? '<span class="oncall-label">On Call</span>' : ''}
+                  ${doctor === currentDoctor ? '<span class="mine">booked by you</span>' : ''}
+                  ${currentIsAdmin ? `<button class="chip-remove" onclick='removeSpecificBooking(${day}, ${JSON.stringify(time)}, ${JSON.stringify(doctor)})'>Remove</button>` : ''}
+                  ${currentIsAdmin && !isLeader ? `<button class="chip-leader" onclick='adminSetLeaderDirect(${day}, ${JSON.stringify(time)}, ${JSON.stringify(doctor)})'>Make leader</button>` : ''}
+                  ${currentIsAdmin && !isOnCall ? `<button class="chip-oncall" onclick='adminSetOnCallDirect(${day}, ${JSON.stringify(time)}, ${JSON.stringify(doctor)})'>Add on call</button>` : ''}
+                  ${currentIsAdmin && isOnCall ? `<button class="chip-remove" onclick='removeSingleOnCallDoctor(${day}, ${JSON.stringify(time)}, ${JSON.stringify(doctor)})'>Remove on call</button>` : ''}
+                </span>
+              `;
+            });
+          } else {
+            html += `Available`;
+          }
+
+          html += `
+                </span>
+              </div>
+              <div>
+          `;
+
+          if(!currentDoctor){
+            html += `<button class="secondary" disabled>Login first</button>`;
+          } else if(mine){
+            html += `<button class="secondary" onclick="removeMyBooking(${day}, '${time}')">Remove mine</button>`;
+          } else {
+            html += `<button class="primary" onclick="reserveShift(${day}, '${time}')">Reserve</button>`;
+          }
+
+          html += `
+              </div>
+            </div>
+          `;
+        }
+
+        html += `</div>`;
+        html += `</div>`;
+      }
+
+      calendar.innerHTML = html;
+    }
+
+    async function refreshAll(){
+      await loadCurrentDoctorFromSession();
+      await loadDoctors();
+      await loadBookings();
+      const msg = 'Planner refreshed.';
+      setPlannerStatus(msg);
+      showToast(msg, 'info');
+    }
+
+    async function init(){
+      await initShared();
+      setPlannerStatus('Planner loaded.');
+      showToast('Planner loaded.', 'info');
+    }
+
+    init();
+  </script>
+</body>
+</html>
