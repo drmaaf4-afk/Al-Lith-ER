@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="pageTitle">Al-Lith Hospital Dashboards</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <div class="header-box">
+    <img
+      class="header-logo"
+      src="https://incyqbermouxcrusmzby.supabase.co/storage/v1/object/public/assets/allith_logo_bg.svg?v=2"
+      alt="Al-Lith Hospital Logo"
+    >
+    <div class="header-ar">مستشفى الليث</div>
+    <div class="header-en">Al-Lith Hospital</div>
+    <div class="header-sub">Hospital Dashboards</div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="box">
+    <h2>Doctor Access</h2>
+
+    <div class="row">
+      <input id="signup_email" type="text" placeholder="Doctor name or email">
+      <input id="signup_password" type="password" placeholder="Password">
+    </div>
+
+    <div class="row">
+      <button class="primary" onclick="signup()">Sign up</button>
+      <button class="primary" onclick="login()">Log in</button>
+      <button class="danger" onclick="logoutDoctor()">Log out</button>
+    </div>
+
+    <div class="muted">
+      Sign up works only for doctors already listed in the doctors table.
+    </div>
+
+    <div id="authStatus" class="status"></div>
+  </div>
+
+  <!-- CURRENT DOCTOR -->
+  <div class="box">
+    <h2>Current Doctor</h2>
+    <div id="currentDoctorBox" class="muted">Current doctor: none</div>
+    <div id="plannerStatus" class="status"></div>
+  </div>
+
+  <!-- ER DASHBOARD ONLY -->
+  <div class="box">
+    <h2>Emergency Department</h2>
+
+    <div class="muted">
+      Access Emergency Department Planner
+    </div>
+
+    <div class="nav-links">
+      <a class="nav-link" href="planner.html">
+        Emergency Department Planner
+      </a>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="app.js"></script>
+
+  <script>
+    async function initHome(){
+      await initShared();
+      document.title = 'Al-Lith Hospital Dashboards';
+    }
+
+    initHome();
+  </script>
+
+</body>
+</html>
