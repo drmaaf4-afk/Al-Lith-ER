@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="pageTitle">Emergency Department Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- HEADER (comes from header.js) -->
+  <div id="sharedHeader"></div>
+
+  <!-- LOGIN -->
+  <div class="box">
+    <h2>Doctor Access</h2>
+
+    <div class="row">
+      <input id="signup_email" type="text" placeholder="Doctor name or email">
+      <input id="signup_password" type="password" placeholder="Password">
+    </div>
+
+    <div class="row">
+      <button class="primary" onclick="signup()">Sign up</button>
+      <button class="primary" onclick="login()">Log in</button>
+      <button class="danger" onclick="logoutDoctor()">Log out</button>
+    </div>
+
+    <div class="muted">
+      Sign up works only for doctors already listed in the doctors table.
+    </div>
+
+    <div id="authStatus" class="status"></div>
+  </div>
+
+  <!-- CURRENT DOCTOR -->
+  <div class="box">
+    <h2>Current Doctor</h2>
+    <div id="currentDoctorBox" class="muted">Current doctor: none</div>
+    <div id="plannerStatus" class="status"></div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="box">
+    <h2>Pages</h2>
+
+    <div class="nav-links">
+      <a class="nav-link" href="planner.html">Open Planner</a>
+      <a class="nav-link" href="summary.html">Open Summary</a>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="app.js"></script>
+  <script src="header.js"></script>
+
+  <script>
+    async function initHome(){
+      await initShared();
+
+      // 👇 This loads header (logo is inside header.js)
+      renderHeader('Emergency Department Dashboard');
+
+      document.title = 'Emergency Department Dashboard';
+    }
+
+    initHome();
+  </script>
+
+</body>
+</html>
