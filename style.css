@@ -17,11 +17,12 @@ h1,h2,h3{
   padding:24px 18px;
   margin-bottom:16px;
   box-shadow:0 6px 18px rgba(47,63,134,0.18);
-  text-align:center;
+  text-align:left
+  ;
 }
 
 .header-logo{
-  width:100%;
+  width:200%;
   max-width:260px;
   height:auto;
   display:block;
