@@ -12,7 +12,7 @@ h1,h2,h3{
 }
 
 .header-box{
-  background:#ffffff;
+  background:#2f3f86;
   border-radius:18px;
   padding:24px 18px;
   margin-bottom:16px;
@@ -31,7 +31,7 @@ h1,h2,h3{
 .header-ar{
   font-size:28px;
   font-weight:bold;
-  color:#2f3f86;
+  color:#ffffff;
   margin:0 0 6px 0;
   direction:rtl;
 }
@@ -39,7 +39,7 @@ h1,h2,h3{
 .header-en{
   font-size:30px;
   font-weight:bold;
-  color:#2f3f86;
+  color:#ffffff;
   margin:0 0 8px 0;
 }
 
