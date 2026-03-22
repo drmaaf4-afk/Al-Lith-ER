@@ -34,7 +34,7 @@ function renderHeader(subtitleText = ''){
         color:#ffffff;
         margin-bottom:10px;
       ">
-        Al-Lith Hospital/ Dashboards
+        Al-Lith Hospital / Dashboards
       </div>
 
       <div class="header-sub" style="
