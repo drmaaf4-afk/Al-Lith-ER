@@ -25,7 +25,7 @@ function renderHeader(subtitleText = ''){
         margin-bottom:6px;
         direction:rtl;
       ">
-        مستشفى الليث
+       مستشفى الليث /المنصات الرقمية
       </div>
 
       <div class="header-en" style="
