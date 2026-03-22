@@ -25,7 +25,7 @@ function renderHeader(subtitleText = ''){
         margin-bottom:6px;
         direction:rtl;
       ">
-       مستشفى الليث / المنصات الرقمية
+        المنصات الرقمية
       </div>
 
       <div class="header-en" style="
@@ -34,7 +34,7 @@ function renderHeader(subtitleText = ''){
         color:#ffffff;
         margin-bottom:10px;
       ">
-        Al-Lith Hospital / Dashboards
+         Dashboards
       </div>
 
       <div class="header-sub" style="
