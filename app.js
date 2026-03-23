@@ -1,5 +1,3 @@
-This is app.js, correct and return full :
-
 const supabaseClient = supabase.createClient(
   'https://incyqbermouxcrusmzby.supabase.co',
   'sb_publishable_l003s4eZYDjpXjrqft_2VQ_ECLSe5bs'
