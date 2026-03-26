@@ -2,15 +2,14 @@
 <html>
 <head>
   <title>Referral On-Call Booking</title>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     body{
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background:#f4f6fb;
       padding:20px;
-      max-width:600px;
+      max-width:650px;
       margin:auto;
       color:#1f2937;
     }
@@ -20,13 +19,20 @@
       margin-bottom:20px;
     }
 
+    h2{
+      margin-top:28px;
+      margin-bottom:10px;
+      font-size:22px;
+    }
+
     input, button{
       width:100%;
-      padding:12px;
+      padding:14px;
       margin-top:10px;
       border-radius:10px;
-      border:1px solid #ccc;
+      border:1px solid #cbd5e1;
       font-size:16px;
+      box-sizing:border-box;
     }
 
     button{
@@ -38,25 +44,50 @@
     }
 
     button:hover{
-      opacity:0.9;
+      opacity:0.95;
     }
 
     .card{
       background:white;
-      padding:12px;
+      padding:14px;
       margin-top:10px;
       border-radius:12px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
     }
 
     .success{
       color:green;
       margin-top:10px;
+      font-weight:bold;
     }
 
     .error{
       color:red;
       margin-top:10px;
+      font-weight:bold;
+    }
+
+    .muted{
+      color:#64748b;
+      font-size:14px;
+      margin-top:8px;
+    }
+
+    .section{
+      background:white;
+      padding:16px;
+      border-radius:14px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom:18px;
+    }
+
+    .logged-box{
+      background:#e8f5e9;
+      border:1px solid #a5d6a7;
+      padding:12px;
+      border-radius:10px;
+      margin-bottom:15px;
+      display:none;
     }
   </style>
 </head>
@@ -65,21 +96,35 @@
 
 <h1>Referral On-Call</h1>
 
-<!-- LOGIN -->
-<input type="email" id="email" placeholder="Email">
-<input type="password" id="password" placeholder="Password">
-<button onclick="login()">Login</button>
-
+<div id="loggedBox" class="logged-box"></div>
 <div id="msg"></div>
 
-<hr>
+<div class="section">
+  <h2>Login</h2>
+  <input type="email" id="loginEmail" placeholder="Email">
+  <input type="password" id="loginPassword" placeholder="Password">
+  <button onclick="login()">Login</button>
+</div>
 
-<!-- BOOKING -->
-<input type="date" id="date">
-<button onclick="book()">Book 24h Shift (08 → 08)</button>
+<div class="section">
+  <h2>Sign Up</h2>
+  <input type="text" id="signupName" placeholder="Doctor Name">
+  <input type="email" id="signupEmail" placeholder="Email">
+  <input type="password" id="signupPassword" placeholder="Password">
+  <button onclick="signup()">Create Account</button>
+  <div class="muted">New doctor accounts will be added to the doctors list automatically.</div>
+</div>
 
-<h3>All Bookings</h3>
-<div id="list"></div>
+<div class="section">
+  <h2>Book 24h Shift (08 → 08)</h2>
+  <input type="date" id="date">
+  <button onclick="book()">Book Shift</button>
+</div>
+
+<div class="section">
+  <h2>All Bookings</h2>
+  <div id="list"></div>
+</div>
 
 <script>
 const supabase = window.supabase.createClient(
@@ -88,98 +133,8 @@ const supabase = window.supabase.createClient(
 );
 
 let currentUser = null;
+let currentDoctor = null;
 
-// LOGIN
-async function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if(error){
-    showError(error.message);
-    return;
-  }
-
-  currentUser = data.user;
-  showSuccess("Logged in successfully");
-
-  loadBookings();
-}
-
-// BOOK SHIFT
-async function book(){
-  if(!currentUser){
-    showError("Please login first");
-    return;
-  }
-
-  const date = document.getElementById("date").value;
-
-  if(!date){
-    showError("Please select a date");
-    return;
-  }
-
-  const { error } = await supabase
-    .from("referral_bookings")
-    .insert({
-      doctor_id: currentUser.id,
-      shift_date: date
-    });
-
-  if(error){
-    showError("Already booked or error");
-    return;
-  }
-
-  showSuccess("Shift booked successfully");
-
-  loadBookings();
-}
-
-// LOAD BOOKINGS
-async function loadBookings(){
-  const { data, error } = await supabase
-    .from("referral_bookings")
-    .select(`
-      shift_date,
-      doctors (
-        name
-      )
-    `)
-    .order("shift_date", { ascending: true });
-
-  if(error){
-    showError(error.message);
-    return;
-  }
-
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-
-  if(!data || data.length === 0){
-    list.innerHTML = "<p>No bookings yet</p>";
-    return;
-  }
-
-  data.forEach(item=>{
-    const div = document.createElement("div");
-    div.className = "card";
-
-    div.innerHTML = `
-      <b>${item.shift_date}</b><br>
-      Doctor: ${item.doctors?.name || "Unknown"}
-    `;
-
-    list.appendChild(div);
-  });
-}
-
-// UI HELPERS
 function showSuccess(msg){
   const el = document.getElementById("msg");
   el.className = "success";
@@ -191,6 +146,231 @@ function showError(msg){
   el.className = "error";
   el.innerText = msg;
 }
+
+function clearMessage(){
+  const el = document.getElementById("msg");
+  el.className = "";
+  el.innerText = "";
+}
+
+function updateLoggedBox(){
+  const box = document.getElementById("loggedBox");
+  if(currentUser && currentDoctor){
+    box.style.display = "block";
+    box.innerHTML = `Logged in as <b>${currentDoctor.name || currentUser.email}</b><br>${currentUser.email}`;
+  } else {
+    box.style.display = "none";
+    box.innerHTML = "";
+  }
+}
+
+async function findDoctorByEmail(email){
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("id, name, email, active")
+    .eq("email", email)
+    .limit(1);
+
+  if(error) {
+    return null;
+  }
+
+  if(!data || data.length === 0) {
+    return null;
+  }
+
+  return data[0];
+}
+
+async function createDoctorIfMissing(name, email){
+  const existingDoctor = await findDoctorByEmail(email);
+  if(existingDoctor){
+    return existingDoctor;
+  }
+
+  const { error } = await supabase
+    .from("doctors")
+    .insert({
+      name: name,
+      email: email,
+      active: true
+    });
+
+  if(error){
+    throw new Error(error.message);
+  }
+
+  const createdDoctor = await findDoctorByEmail(email);
+  return createdDoctor;
+}
+
+async function login(){
+  clearMessage();
+
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  if(!email || !password){
+    showError("Please enter email and password.");
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if(error){
+    showError("Login failed: " + error.message);
+    return;
+  }
+
+  currentUser = data.user;
+  currentDoctor = await findDoctorByEmail(currentUser.email);
+
+  if(!currentDoctor){
+    showError("Login succeeded, but doctor record was not found in doctors table.");
+    updateLoggedBox();
+    return;
+  }
+
+  showSuccess("Logged in successfully.");
+  updateLoggedBox();
+  loadBookings();
+}
+
+async function signup(){
+  clearMessage();
+
+  const name = document.getElementById("signupName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim();
+  const password = document.getElementById("signupPassword").value;
+
+  if(!name || !email || !password){
+    showError("Please enter name, email, and password.");
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password
+  });
+
+  if(error){
+    showError("Sign up failed: " + error.message);
+    return;
+  }
+
+  try {
+    const doctor = await createDoctorIfMissing(name, email);
+    currentUser = data.user || null;
+    currentDoctor = doctor || null;
+
+    showSuccess("Account created successfully. You can now use the system.");
+    updateLoggedBox();
+    loadBookings();
+  } catch (e) {
+    showError("Account created in Auth, but failed to add doctor record: " + e.message);
+  }
+}
+
+async function book(){
+  clearMessage();
+
+  if(!currentUser){
+    showError("Please login first.");
+    return;
+  }
+
+  if(!currentDoctor){
+    currentDoctor = await findDoctorByEmail(currentUser.email);
+    if(!currentDoctor){
+      showError("Doctor record not found.");
+      return;
+    }
+  }
+
+  const date = document.getElementById("date").value;
+
+  if(!date){
+    showError("Please select a date.");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("referral_bookings")
+    .insert({
+      doctor_id: currentDoctor.id,
+      shift_date: date
+    });
+
+  if(error){
+    showError("Booking failed: " + error.message);
+    return;
+  }
+
+  showSuccess("Shift booked successfully.");
+  loadBookings();
+}
+
+async function loadBookings(){
+  const { data, error } = await supabase
+    .from("referral_bookings")
+    .select(`
+      shift_date,
+      doctor_id
+    `)
+    .order("shift_date", { ascending: true });
+
+  if(error){
+    showError("Load failed: " + error.message);
+    return;
+  }
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if(!data || data.length === 0){
+    list.innerHTML = "<p>No bookings yet.</p>";
+    return;
+  }
+
+  const doctorIds = [...new Set(data.map(item => item.doctor_id).filter(Boolean))];
+
+  let doctorsMap = {};
+  if(doctorIds.length > 0){
+    const { data: doctorsData } = await supabase
+      .from("doctors")
+      .select("id, name")
+      .in("id", doctorIds);
+
+    (doctorsData || []).forEach(doc => {
+      doctorsMap[doc.id] = doc.name;
+    });
+  }
+
+  data.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <b>${item.shift_date}</b><br>
+      Doctor: ${doctorsMap[item.doctor_id] || "Unknown"}
+    `;
+    list.appendChild(div);
+  });
+}
+
+async function restoreSession(){
+  const { data } = await supabase.auth.getUser();
+  if(data && data.user){
+    currentUser = data.user;
+    currentDoctor = await findDoctorByEmail(currentUser.email);
+    updateLoggedBox();
+  }
+  loadBookings();
+}
+
+restoreSession();
 </script>
 
 </body>
