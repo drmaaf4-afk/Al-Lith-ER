@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Referral On-Call Booking</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body{
+      font-family: Arial;
+      background:#f4f6fb;
+      padding:20px;
+      max-width:600px;
+      margin:auto;
+    }
+
+    h1{
+      text-align:center;
+    }
+
+    input, button{
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      font-size:16px;
+    }
+
+    button{
+      background:#2f3f86;
+      color:white;
+      border:none;
+      font-weight:bold;
+    }
+
+    .card{
+      background:white;
+      padding:12px;
+      margin-top:10px;
+      border-radius:10px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Referral On-Call</h1>
+
+<input type="email" id="email" placeholder="Your Email">
+<input type="password" id="password" placeholder="Password">
+
+<button onclick="login()">Login</button>
+
+<hr>
+
+<input type="date" id="date">
+<button onclick="book()">Book 24h Shift</button>
+
+<h3>Bookings</h3>
+<div id="list"></div>
+
+<script>
+const supabase = window.supabase.createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+let currentUser = null;
+
+async function login(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  currentUser = data.user;
+  alert("Logged in");
+
+  loadBookings();
+}
+
+async function book(){
+  if(!currentUser){
+    alert("Login first");
+    return;
+  }
+
+  const date = document.getElementById("date").value;
+
+  if(!date){
+    alert("Select date");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("referral_bookings")
+    .insert({
+      doctor_id: currentUser.id,
+      shift_date: date
+    });
+
+  if(error){
+    alert("Already booked or error");
+    return;
+  }
+
+  alert("Booked successfully");
+  loadBookings();
+}
+
+async function loadBookings(){
+  const { data } = await supabase
+    .from("referral_bookings")
+    .select("shift_date, doctors(name)")
+    .order("shift_date", { ascending: true });
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  data.forEach(item=>{
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <b>${item.shift_date}</b><br>
+      ${item.doctors?.name || "Unknown"}
+    `;
+
+    list.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
